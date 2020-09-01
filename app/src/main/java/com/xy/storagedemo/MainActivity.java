@@ -108,25 +108,15 @@ public class MainActivity extends AppCompatActivity {
             case 10012:
                 if (data != null) {
                     Uri uri = data.getData();
-                    Log.d("---",uri.toString());
+                    if(uri!=null){
+                        storageManager.copyUriToExternalFilesDir(uri,"test.jpg");
+                    }
+                    /*Log.d("---",uri.toString());
                     try {
                         InputStream inputStream = getContentResolver().openInputStream(uri);
                         mBinding.ivImage.setImageBitmap(BitmapFactory.decodeStream(inputStream));
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();
-                    }
-
-                    /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        storageManager.deleteUri(uri, new StorageManager.OnDeleteListener() {
-                            @Override
-                            public void deletePicture(IntentSender intentSender) {
-                                try {
-                                    startIntentSenderForResult(intentSender, 10010, null, 0, 0, 0);
-                                } catch (IntentSender.SendIntentException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        });
                     }*/
                 }
                 break;

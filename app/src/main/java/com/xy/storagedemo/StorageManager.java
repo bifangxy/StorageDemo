@@ -18,8 +18,8 @@ import android.util.Log;
 
 import androidx.annotation.RequiresApi;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -127,8 +127,12 @@ public class StorageManager {
                 //DCIM是系统文件夹，关于系统文件夹可以到系统自带的文件管理器中查看，不可以写没存在的名字
                 contentValues.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_DCIM + File.separator + path);
             } else {
-                contentValues.put(MediaStore.Images.Media.DATA, Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getPath()
-                        + File.separator + path + ".jpg");
+                String realPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getPath() + File.separator + path;
+                File file = new File(realPath);
+                if(!file.exists()){
+                    file.mkdirs();
+                }
+                contentValues.put(MediaStore.Images.Media.DATA, realPath + File.separator + fileName + ".jpg");
             }
             contentValues.put(MediaStore.Images.Media.MIME_TYPE, "image/JPEG");
             Uri uri = mContext.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
@@ -162,14 +166,15 @@ public class StorageManager {
 
             pathName = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ?
                     DEFAULT_IMAGE_PATH + File.separator + pathName + File.separator :
-                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getPath() + File.separator + pathName;
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getPath()
+                            + File.separator + pathName + File.separator + fileName;
 
             //根据路径和文件名查询图片
-//            String selection = queryPathKey + "=? and " + MediaStore.Images.Media.DISPLAY_NAME + "=? ";
-//            String[] args = new String[]{pathName, fileName};
+            String selection = queryPathKey + "=? ";
+            String[] args = new String[]{pathName};
             //根据类型查询图片
-            String selection = MediaStore.Images.Media.MIME_TYPE + "=? or " + MediaStore.Images.Media.MIME_TYPE + "=? ";
-            String[] args = new String[]{"image/jpeg", "image/png"};
+//            String selection = MediaStore.Images.Media.MIME_TYPE + "=? or " + MediaStore.Images.Media.MIME_TYPE + "=? ";
+//            String[] args = new String[]{"image/jpeg", "image/png"};
 
             Cursor cursor = mContext.getContentResolver().query(
                     MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
@@ -278,6 +283,39 @@ public class StorageManager {
         return null;
     }
 
+    /**
+     * @param uri 将uri转换成为私有目录下的文件，这样可提供给其他第三方不支持Uri的SDK使用
+     * @param fileName 文件名
+     */
+    public void copyUriToExternalFilesDir(Uri uri, String fileName) {
+        try {
+            InputStream inputStream = mContext.getContentResolver().openInputStream(uri);
+            String filePath = mContext.getExternalCacheDir() + File.separator + "temp";
+            if (inputStream != null) {
+                File pathFile = new File(filePath);
+                if (!pathFile.exists()) {
+                    pathFile.mkdirs();
+                }
+                File file = new File(filePath + File.separator + fileName);
+                OutputStream outputStream = new FileOutputStream(file);
+                BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
+                BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(outputStream);
+                byte[] bytes = new byte[1024];
+                int length = bufferedInputStream.read(bytes);
+                while (length > 0) {
+                    bufferedOutputStream.write(bytes, 0, length);
+                    bufferedOutputStream.flush();
+                    length = bufferedInputStream.read(bytes);
+                }
+                bufferedOutputStream.close();
+                outputStream.close();
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
 
     public interface OnDeleteListener {
         void deletePicture(IntentSender intentSender);
