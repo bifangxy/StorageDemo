@@ -1,6 +1,7 @@
 package com.xy.storagedemo;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.databinding.DataBindingUtil;
 
@@ -14,16 +15,24 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.ParcelFileDescriptor;
+import android.provider.DocumentsContract;
 import android.util.Log;
+import android.util.Size;
 
 import com.xy.storagedemo.databinding.ActivityMainBinding;
 
+import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
+
+    private static final int REQUEST_DELETE_CODE = 10010;
 
     private static final int REQUEST_SAF_CODE = 10012;
 
@@ -40,8 +49,7 @@ public class MainActivity extends AppCompatActivity {
         mBinding.setClick(new ClickProxy());
         storageManager = StorageManager.getInstance();
 
-        requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                Manifest.permission.READ_EXTERNAL_STORAGE,
+        requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,
                 Manifest.permission.ACCESS_MEDIA_LOCATION}, 0);
     }
 
@@ -91,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void deletePicture(IntentSender intentSender) {
                         try {
-                            startIntentSenderForResult(intentSender, 10010, null, 0, 0, 0);
+                            startIntentSenderForResult(intentSender, REQUEST_DELETE_CODE, null, 0, 0, 0);
                         } catch (IntentSender.SendIntentException e) {
                             e.printStackTrace();
                         }
@@ -101,17 +109,18 @@ public class MainActivity extends AppCompatActivity {
         }
 
         public void toSaf() {
-            createFile();
-//            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-//            intent.addCategory(Intent.CATEGORY_OPENABLE);
-//            //访问所有的图片文件
-////            intent.setType("image/*");
-//            //访问所有的pdf文件
+//            createFile();
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            //访问所有的图片文件
+            intent.setType("image/*");
+            //访问所有的pdf文件
 //            intent.setType("application/pdf*");
-//            startActivityForResult(intent, REQUEST_SAF_CODE);
+            startActivityForResult(intent, REQUEST_SAF_CODE);
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -126,7 +135,34 @@ public class MainActivity extends AppCompatActivity {
                 if (data != null) {
                     Uri uri = data.getData();
                     if (uri != null) {
-                        storageManager.copyUriToExternalFilesDir(uri, "test.jpg");
+                        try {
+                            DocumentsContract.deleteDocument(getContentResolver(),uri);
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                        /*try {
+                            //获取缩略图
+                            Bitmap bitmap = getContentResolver().loadThumbnail(uri, new Size(80, 80), null);
+                            mBinding.ivImage.setImageBitmap(bitmap);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        try {
+                            //写
+//                            getContentResolver().openFileDescriptor(uri, "w");
+                            //读
+                            ParcelFileDescriptor parcelFileDescriptor = getContentResolver().openFileDescriptor(uri, "r");
+                            if(parcelFileDescriptor!=null){
+                                FileDescriptor fileDescriptor =parcelFileDescriptor.getFileDescriptor();
+//                                BitmapFactory.decodeFileDescriptor(fileDescriptor);
+                                FileOutputStream fileOutputStream = new FileOutputStream(fileDescriptor);
+                            }
+
+
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                        }*/
+//                        storageManager.copyUriToExternalFilesDir(uri, "test.jpg");
                     }
                 }
                 break;

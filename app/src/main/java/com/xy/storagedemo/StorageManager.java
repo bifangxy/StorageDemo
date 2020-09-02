@@ -125,7 +125,7 @@ public class StorageManager {
             //Android10 不再使用MediaStore.Images.Media.DATA，而使用MediaStore.Images.Media.RELATIVE_PATH 相对路径
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 //DCIM是系统文件夹，关于系统文件夹可以到系统自带的文件管理器中查看，不可以写没存在的名字
-                contentValues.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + File.separator + path);
+                contentValues.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_DCIM + File.separator + path);
             } else {
                 String realPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getPath() + File.separator + path;
                 File file = new File(realPath);
@@ -319,7 +319,6 @@ public class StorageManager {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
     public interface OnDeleteListener {
