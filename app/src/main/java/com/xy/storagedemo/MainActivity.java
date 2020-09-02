@@ -25,6 +25,10 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final int REQUEST_SAF_CODE = 10012;
+
+    private static final int WRITE_REQUEST_CODE = 10013;
+
     private ActivityMainBinding mBinding;
 
     private StorageManager storageManager;
@@ -38,7 +42,16 @@ public class MainActivity extends AppCompatActivity {
 
         requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,
                 Manifest.permission.READ_EXTERNAL_STORAGE,
-        Manifest.permission.ACCESS_MEDIA_LOCATION}, 0);
+                Manifest.permission.ACCESS_MEDIA_LOCATION}, 0);
+    }
+
+
+    private void createFile() {
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("application/pdf");
+        intent.putExtra(Intent.EXTRA_TITLE, "android.pdf");
+        startActivityForResult(intent, WRITE_REQUEST_CODE);
     }
 
 
@@ -88,10 +101,14 @@ public class MainActivity extends AppCompatActivity {
         }
 
         public void toSaf() {
-            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-            intent.addCategory(Intent.CATEGORY_OPENABLE);
-            intent.setType("image/*");
-            startActivityForResult(intent, 10012);
+            createFile();
+//            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+//            intent.addCategory(Intent.CATEGORY_OPENABLE);
+//            //访问所有的图片文件
+////            intent.setType("image/*");
+//            //访问所有的pdf文件
+//            intent.setType("application/pdf*");
+//            startActivityForResult(intent, REQUEST_SAF_CODE);
         }
     }
 
@@ -108,16 +125,9 @@ public class MainActivity extends AppCompatActivity {
             case 10012:
                 if (data != null) {
                     Uri uri = data.getData();
-                    if(uri!=null){
-                        storageManager.copyUriToExternalFilesDir(uri,"test.jpg");
+                    if (uri != null) {
+                        storageManager.copyUriToExternalFilesDir(uri, "test.jpg");
                     }
-                    /*Log.d("---",uri.toString());
-                    try {
-                        InputStream inputStream = getContentResolver().openInputStream(uri);
-                        mBinding.ivImage.setImageBitmap(BitmapFactory.decodeStream(inputStream));
-                    } catch (FileNotFoundException e) {
-                        e.printStackTrace();
-                    }*/
                 }
                 break;
         }

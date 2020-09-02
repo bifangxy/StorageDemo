@@ -125,11 +125,11 @@ public class StorageManager {
             //Android10 不再使用MediaStore.Images.Media.DATA，而使用MediaStore.Images.Media.RELATIVE_PATH 相对路径
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 //DCIM是系统文件夹，关于系统文件夹可以到系统自带的文件管理器中查看，不可以写没存在的名字
-                contentValues.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_DCIM + File.separator + path);
+                contentValues.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + File.separator + path);
             } else {
                 String realPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getPath() + File.separator + path;
                 File file = new File(realPath);
-                if(!file.exists()){
+                if (!file.exists()) {
                     file.mkdirs();
                 }
                 contentValues.put(MediaStore.Images.Media.DATA, realPath + File.separator + fileName + ".jpg");
@@ -173,9 +173,8 @@ public class StorageManager {
             String selection = queryPathKey + "=? ";
             String[] args = new String[]{pathName};
             //根据类型查询图片
-//            String selection = MediaStore.Images.Media.MIME_TYPE + "=? or " + MediaStore.Images.Media.MIME_TYPE + "=? ";
-//            String[] args = new String[]{"image/jpeg", "image/png"};
-
+            // String selection = MediaStore.Images.Media.MIME_TYPE + "=? or " + MediaStore.Images.Media.MIME_TYPE + "=? ";
+            //String[] args = new String[]{"image/jpeg", "image/png"};
             Cursor cursor = mContext.getContentResolver().query(
                     MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                     new String[]{MediaStore.Images.Media._ID, queryPathKey, MediaStore.Images.Media.MIME_TYPE, MediaStore.Images.Media.DISPLAY_NAME},
@@ -184,16 +183,19 @@ public class StorageManager {
                     null);
             if (cursor != null && cursor.moveToFirst()) {
                 do {
+                    //获取id，可以通过该id拼接得到URI
                     int id = cursor.getInt(cursor.getColumnIndex(MediaStore.Images.Media._ID));
                     String path = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ?
                             cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.RELATIVE_PATH)) :
                             cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
                     String type = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.MIME_TYPE));//图片类型
                     String name = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME));//图片名字
-//            Uri uri = Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, String.valueOf(id));
+                    //两种不同的URI拼接方式，都可以使用
+                    // Uri uri = Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, String.valueOf(id));
                     Uri uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
 
                     if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+                        //获取URI的位置信息，需要获取Manifest.permission.ACCESS_MEDIA_LOCATION权限
                         uri = MediaStore.setRequireOriginal(uri);
                     }
                     InputStream inputStream = mContext.getContentResolver().openInputStream(uri);
@@ -201,12 +203,15 @@ public class StorageManager {
                         Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
                         bitmapList.add(bitmap);
                         InputStream is = mContext.getContentResolver().openInputStream(uri);
-                        ExifInterface exifInterface = new ExifInterface(is);
-                        float[] returnedLatLong = new float[2];
-                        boolean success = exifInterface.getLatLong(returnedLatLong);
-                        if (success) {
-                            Log.d(TAG, "lat = " + returnedLatLong[0]);
-                            Log.d(TAG, "lng = " + returnedLatLong[1]);
+                        if (is!=null){
+                            //获取经纬度信息
+                            ExifInterface exifInterface = new ExifInterface(is);
+                            float[] returnedLatLong = new float[2];
+                            boolean success = exifInterface.getLatLong(returnedLatLong);
+                            if (success) {
+                                Log.d(TAG, "lat = " + returnedLatLong[0]);
+                                Log.d(TAG, "lng = " + returnedLatLong[1]);
+                            }
                         }
                     }
                 } while (cursor.moveToNext());
@@ -284,7 +289,7 @@ public class StorageManager {
     }
 
     /**
-     * @param uri 将uri转换成为私有目录下的文件，这样可提供给其他第三方不支持Uri的SDK使用
+     * @param uri      将uri转换成为私有目录下的文件，这样可提供给其他第三方不支持Uri的SDK使用
      * @param fileName 文件名
      */
     public void copyUriToExternalFilesDir(Uri uri, String fileName) {
